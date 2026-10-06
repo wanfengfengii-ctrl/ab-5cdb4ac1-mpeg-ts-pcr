@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    image: mpegts-audit:latest
+    environment:
+      PORT: "8080"
+    ports:
+      # Host port is configurable: APP_PORT=9090 docker compose up app
+      - "${APP_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      start_period: 2s
+      retries: 15
+    restart: unless-stopped
+
+  # One-shot verification gate: waits for app health, then runs unit/integration
+  # tests, the application build, and legal/abnormal stream smoke checks.
+  # Reports via its own exit code and exits; rerunnable in a clean environment.
+  verify:
+    image: mpegts-audit:latest
+    build: .
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      SMOKE_BASE_URL: "http://app:8080"
+    entrypoint: ["/bin/sh", "-c"]
+    restart: "no"
+    command:
+      - |
+        set -eu
+        echo "==> code tests"
+        npm test
+        echo "==> application build"
+        npm run build
+        echo "==> legal/abnormal stream smoke"
+        npm run smoke
+        echo "==> verify passed"

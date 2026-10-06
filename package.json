@@ -1,0 +1,16 @@
+{
+  "name": "mpegts-audit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Strict single-program MPEG-TS audit HTTP service",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test test/auditor.test.mjs test/http.test.mjs",
+    "smoke": "node test/smoke.mjs"
+  }
+}
